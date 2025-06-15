@@ -49,6 +49,24 @@ async function run() {
     res.send(items);
   });
 
+    // GET data for expired foods
+    app.get("/expired-foods", async (req, res) => {
+    const today = new Date().toISOString().split("T")[0]; // e.g., "2025-06-13"
+
+    try {
+      const expiredItems = await foodCollection
+        .find({
+          expiryDate: { $lt: today }
+        })
+        .sort({ expiryDate: -1 })
+        .toArray();
+
+      res.send(expiredItems);
+    } catch (error) {
+      res.status(500).send({ message: "Failed to fetch expired items", error });
+    }
+  });
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
