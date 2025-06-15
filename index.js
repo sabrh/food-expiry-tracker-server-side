@@ -67,6 +67,17 @@ async function run() {
     }
   });
 
+   // GET data for fridge page
+   app.get("/fridge-foods", async (req, res) => {
+  try {
+    const allFoods = await foodCollection.find().sort({ addedDate: -1 }).toArray();
+    res.send(allFoods);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch food items", error });
+  }
+});
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
