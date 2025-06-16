@@ -77,6 +77,19 @@ async function run() {
   }
 });
 
+// GET /api/foods/:id
+const { ObjectId } = require('mongodb');
+
+app.get("/api/foods/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const food = await foodCollection.findOne({ _id: new ObjectId(id) });
+    if (!food) return res.status(404).send("Not Found");
+    res.send(food);
+  } catch (err) {
+    res.status(500).send("Server error: " + err.message);
+  }
+});
 
 
     // Send a ping to confirm a successful connection
