@@ -25,7 +25,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
   
-    const foodCollection = client.db("FridgeDB").collection("foods"); 
+    foodCollection = client.db("FridgeDB").collection("foods"); 
 
     console.log("Connected to MongoDB!");
 
@@ -83,11 +83,23 @@ const { ObjectId } = require('mongodb');
 app.get("/api/foods/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const food = await foodCollection.findOne({ _id: new ObjectId(id) });
+    const food=await foodCollection.findOne({ _id: new ObjectId(id) });
     if (!food) return res.status(404).send("Not Found");
     res.send(food);
   } catch (err) {
     res.status(500).send("Server error: " + err.message);
+  }
+});
+
+//Post add food to foods collection in db
+app.post("/api/foods", async (req, res) =>{
+  const food=req.body;
+  food.addedDate=new Date();
+  try{
+    const result=await foodCollection.insertOne(food);
+    res.send(result);
+  } catch (error){
+    res.status(500).send({ message: "Failed to add food", error });
   }
 });
 
