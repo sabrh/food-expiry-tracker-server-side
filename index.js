@@ -94,7 +94,8 @@ app.get("/api/foods/:id", async (req, res) => {
 //Post add food to foods collection in db
 app.post("/api/foods", async (req, res) =>{
   const food=req.body;
-  food.addedDate=new Date();
+  food.addedDate = new Date();
+  food.notes = []; 
   try{
     const result=await foodCollection.insertOne(food);
     res.send(result);
@@ -129,6 +130,45 @@ app.delete("/api/foods/:id", async (req, res) => {
   const result= await foodCollection.deleteOne({_id: new ObjectId(id)})
   res.send(result)
 })
+
+//Post note to a food item
+app.post("/api/foods/:id/notes", async (req, res) => {
+  const { id } = req.params;
+  const { text, date, userEmail } = req.body;
+
+  if (!text || !date || !userEmail) {
+    return res.status(400).send({ message: "Missing required fields" });
+  }
+  try {
+    const food = await foodCollection.findOne({ _id: new ObjectId(id) });
+    if (!food) {
+      return res.status(404).send({ message: "Food item not found" });
+    }
+    if (food.userEmail !== userEmail) {
+      return res.status(403).send({ message: "Unauthorized to add a note to this food item" });
+    }
+
+    if (!Array.isArray(food.notes)) {
+      await foodCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { notes: [] } }
+      );
+    }
+
+    const result = await foodCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $push: { notes: { text, date } }
+      }
+    );
+
+    res.send({ success: true, modifiedCount: result.modifiedCount });
+  } catch (error) {
+    console.error("Error adding note:", error);
+    res.status(500).send({ message: "Failed to add note", error });
+  }
+});
+
 
 
     // Send a ping to confirm a successful connection
