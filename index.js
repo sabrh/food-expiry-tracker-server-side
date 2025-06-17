@@ -103,6 +103,33 @@ app.post("/api/foods", async (req, res) =>{
   }
 });
 
+//Get data My Items page 
+app.get("/api/foods", async (req, res) => {
+  const userEmail=req.query.email
+      if (!userEmail) return res.status(400).send({message: 'Email is required.'})
+
+      const result = await foodCollection.find({userEmail})
+      .toArray()
+      res.send(result)
+    })
+//Update
+app.put("/api/foods/:id", async (req, res) => {
+  const id=req.params.id
+  const updateItem=req.body
+
+  const result=await foodCollection.updateOne(
+    {_id: new ObjectId(id)},
+    {$set: updateItem}
+  )
+  res.send(result)
+})
+//Delete
+app.delete("/api/foods/:id", async (req, res) => {
+  const id=req.params.id
+  const result= await foodCollection.deleteOne({_id: new ObjectId(id)})
+  res.send(result)
+})
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
