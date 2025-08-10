@@ -168,6 +168,76 @@ app.post("/api/foods/:id/notes", async (req, res) => {
   }
 });
 
+//Analytics
+app.get("/analytics/summary", async (req, res) => {
+  try {
+    // today as YYYY-MM-DD (same format you're using in other endpoints)
+    const today = new Date().toISOString().split("T")[0];
+
+    // total items
+    const totalCount = await foodCollection.countDocuments();
+
+    // expired count: expiryDate < today
+    const expiredCountAgg = await foodCollection.aggregate([
+      {
+        $match: {
+          expiryDate: { $lt: today }
+        }
+      },
+      { $count: "expiredCount" }
+    ]).toArray();
+    const expiredCount = (expiredCountAgg[0] && expiredCountAgg[0].expiredCount) || 0;
+
+    // saved count
+    const savedCount = Math.max(0, totalCount - expiredCount);
+
+    // items by category (counts)
+    const categoryAgg = await foodCollection.aggregate([
+      {
+        $group: {
+          _id: "$category",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]).toArray();
+    // convert to object or arrays
+    const itemsByCategory = {};
+    categoryAgg.forEach((c) => {
+      const key = c._id || "Uncategorized";
+      itemsByCategory[key] = c.count;
+    });
+
+    // expired by category
+    const expiredByCategoryAgg = await foodCollection.aggregate([
+      { $match: { expiryDate: { $lt: today } } },
+      {
+        $group: {
+          _id: "$category",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]).toArray();
+    const expiredByCategory = {};
+    expiredByCategoryAgg.forEach((c) => {
+      const key = c._id || "Uncategorized";
+      expiredByCategory[key] = c.count;
+    });
+
+    res.send({
+      totalCount,
+      expiredCount,
+      savedCount,
+      itemsByCategory,
+      expiredByCategory,
+    });
+  } catch (error) {
+    console.error("Analytics error:", error);
+    res.status(500).send({ message: "Failed to compute analytics", error });
+  }
+});
+
 
 
     // Send a ping to confirm a successful connection
